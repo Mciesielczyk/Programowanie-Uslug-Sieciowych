@@ -1,0 +1,14 @@
+# Klucze prywatne
+*.key
+*.pem
+
+# Środowisko wirtualne
+venv/
+__pycache__/
+
+# Pliki tymczasowe OpenSSL
+*.csr
+*.srl
+*.io
+
+.DS_Store

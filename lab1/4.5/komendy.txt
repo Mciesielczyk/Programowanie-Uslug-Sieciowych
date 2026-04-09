@@ -2,3 +2,8 @@
 
 
  sudo setcap -r /usr/bin/python3.12 - usun uprawniani
+
+
+
+
+ sudo tcpdump -i lo port 12345

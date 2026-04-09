@@ -1,13 +1,6 @@
 import socket
 import struct
 
-# ============================================================
-#  GNIAZDA SUROWE — ocena 4.0
-#  Tylko klient — buduje nagłówek UDP ręcznie (SOCK_RAW)
-#  Test: uruchom serwer z oceny 3.0, potem ten plik
-#        serwer 3.0 powinien odebrać wiadomość normalnie
-# ============================================================
-
 def calculate_checksum(msg):
     """Suma kontrolna RFC 1071 — wymagana w nagłówkach IP i UDP"""
     if len(msg) % 2 != 0:
@@ -88,17 +81,14 @@ def build_udp_header(src_port, dst_port, data, src_ip, dst_ip):
     return udp_header
 
 
-# ------------------------------------------------------------
-#  KLIENT — surowe gniazdo, ręcznie zbudowany pakiet IP + UDP
-# ------------------------------------------------------------
 
 src_ip   = "127.0.0.1"
 dst_ip   = "127.0.0.1"
 src_port = 9999
-dst_port = 22222          # musi być ten sam port co w serwerze 3.0!
+dst_port = 22222          # ten sam port co w serwerze 3.0
 message  = b"Hej z surowego gniazda!"
 
-# SOCK_RAW + IPPROTO_RAW = budujemy nagłówek IP sami
+# SOCK_RAW + IPPROTO_RAW
 s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
 
 # IP_HDRINCL = "nagłówek IP dostarczam sam, nie dodawaj swojego"

@@ -18,3 +18,5 @@ while True:
     
     # 4. Odpowiadamy (musimy podać adres, bo nie ma stałego połączenia!)
     server_udp.sendto("Serwer UDP potwierdza odbiór!".encode(), addr)
+
+server_udp.close()
