@@ -5,8 +5,7 @@ HOST = '127.0.0.1'
 PORT = 8000
 
 context = ssl.create_default_context()
-# Tu wczytujemy COKOLWIEK innego niż poprawne myCA.pem
-# Może to być pusty plik albo certyfikat innego urzędu
+
 try:
     context.load_verify_locations("server.crt") # Próbujemy ufać staremu plikowi zamiast CA
 except:

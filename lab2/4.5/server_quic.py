@@ -6,17 +6,16 @@ from aioquic.quic.events import StreamDataReceived
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509 import load_pem_x509_certificate
 
-# Definiujemy protokół obsługujący zdarzenia
 class MyQuicHandler(QuicConnectionProtocol):
     def quic_event_received(self, event):
         if isinstance(event, StreamDataReceived):
             data = event.data.decode()
             print(f"[*] QUIC Odebrano: {data}")
             
-            # Odpowiedź
+            
             response = f"Serwer QUIC potwierdza: {data}".encode()
             self._quic.send_stream_data(event.stream_id, response, end_stream=True)
-            self.transmit() # Wysłanie danych do klienta
+            self.transmit() 
 
 async def main():
     with open("server.crt", "rb") as f:

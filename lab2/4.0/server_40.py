@@ -5,13 +5,10 @@ HOST = '127.0.0.1'
 PORT = 8000
 
 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-# Ładujemy certyfikat serwera (żeby klient nam ufał)
 context.load_cert_chain(certfile="server.crt", keyfile="server.key")
 
-# NOWOŚĆ: Ładujemy certyfikat CA (żeby serwer mógł sprawdzić klienta)
 context.load_verify_locations("myCA.pem")
 
-# NOWOŚĆ: Wymagamy certyfikatu od każdego, kto się łączy
 context.verify_mode = ssl.CERT_REQUIRED
 
 bindsocket = socket.socket()

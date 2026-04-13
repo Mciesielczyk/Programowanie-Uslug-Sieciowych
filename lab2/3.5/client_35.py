@@ -5,9 +5,6 @@ HOST = '127.0.0.1'
 PORT = 8000
 
 context = ssl.create_default_context()
-
-# KLUCZOWA ZMIANA: Ufamy naszemu urzędowi CA
-# Klient zaakceptuje KAŻDY certyfikat podpisany przez myCA.pem
 context.load_verify_locations("myCA.pem")
 
 try:

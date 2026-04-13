@@ -1,15 +1,15 @@
 import socket
 import ssl
 
-# Konfiguracja adresu
+
 HOST = '127.0.0.1'
 PORT = 8000
 
-# Tworzymy kontekst SSL dla serwera
+
 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 context.load_cert_chain(certfile="server.crt", keyfile="server.key")
 
-# Tworzymy zwykłe gniazdo TCP
+
 bindsocket = socket.socket()
 bindsocket.bind((HOST, PORT))
 bindsocket.listen(5)
@@ -19,8 +19,6 @@ print(f"[*] Serwer TLS uruchomiony na {HOST}:{PORT}")
 while True:
     newsock, fromaddr = bindsocket.accept()
     try:
-        # Przenosimy wrap_socket do środka try, 
-        # bo to tutaj najczęściej dzieją się błędy certyfikatów
         connstream = context.wrap_socket(newsock, server_side=True)
         try:
             data = connstream.recv(1024)

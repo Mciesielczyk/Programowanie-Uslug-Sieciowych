@@ -5,10 +5,8 @@ HOST = '127.0.0.1'
 PORT = 8000
 
 context = ssl.create_default_context()
-# Ufamy serwerowi (bo ma certyfikat od naszego CA)
 context.load_verify_locations("myCA.pem")
 
-# NOWOŚĆ: Legitymujemy się własnym certyfikatem
 context.load_cert_chain(certfile="client.crt", keyfile="client.key")
 
 try:
