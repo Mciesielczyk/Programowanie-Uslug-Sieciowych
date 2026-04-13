@@ -1,9 +1,0 @@
- sudo setcap 'cap_net_raw,cap_net_bind_service+ep' $(which python3.12) - nadaj uprwanienia
-
-
- sudo setcap -r /usr/bin/python3.12 - usun uprawniani
-
-
-
-
- sudo tcpdump -i lo port 12345
