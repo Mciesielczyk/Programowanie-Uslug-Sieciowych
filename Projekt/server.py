@@ -9,6 +9,7 @@ import threading
 import hashlib
 import time
 import sys
+import ssl
 from protocol import (
     wyslij, odbierz, TIMEOUT,
     MSG_HELLO, MSG_AUTH, MSG_AUTH_OK, MSG_AUTH_ERR,
@@ -214,15 +215,44 @@ def obsluz_klienta(sock: socket.socket, addr):
 
 
 def uruchom_serwer():
+    """Główna funkcja serwera z obsługą szyfrowania TLS."""
+    # 1. Konfiguracja kontekstu SSL (Ładujemy certyfikaty)
+    # Musisz mieć pliki server.crt i server.key w tym samym folderze!
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    try:
+        context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+        print("[SERWER] Certyfikaty TLS załadowane pomyślnie.")
+    except FileNotFoundError:
+        print("[BŁĄD] Brak plików server.crt lub server.key! Wygeneruj je przez openssl.")
+        return
+
     serwer_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serwer_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     serwer_sock.bind((HOST, PORT))
     serwer_sock.listen(10)
-    print(f"[SERWER] Działa na {HOST}:{PORT}")
+    
+    print(f"[SERWER] Działa na {HOST}:{PORT} (Szyfrowanie TLS aktywne)")
+    
     try:
         while True:
+            # Odbieramy zwykłe połączenie TCP
             sock, addr = serwer_sock.accept()
-            threading.Thread(target=obsluz_klienta, args=(sock, addr), daemon=True).start()
+            
+            try:
+                # 2. OPAKOWUJEMY GNIAZDO W WARSTWĘ TLS
+                secure_sock = context.wrap_socket(sock, server_side=True)
+                
+                # Każdy klient dostaje swój wątek, przekazujemy bezpieczne gniazdo
+                watek = threading.Thread(
+                    target=obsluz_klienta,
+                    args=(secure_sock, addr),
+                    daemon=True
+                )
+                watek.start()
+            except ssl.SSLError as e:
+                print(f"[SERWER] Błąd Handshake TLS z {addr}: {e}")
+                sock.close()
+                
     except KeyboardInterrupt:
         print("\n[SERWER] Zamykam...")
     finally:

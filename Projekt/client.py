@@ -10,6 +10,7 @@ import threading
 import argparse
 import sys
 import time
+import ssl
 from protocol import (
     wyslij, odbierz, TIMEOUT,
     MSG_HELLO, MSG_AUTH, MSG_AUTH_OK, MSG_AUTH_ERR,
@@ -66,18 +67,29 @@ def watek_ping(sock: socket.socket):
 
 
 def polacz_i_graj(host: str, port: int):
-    """Główna funkcja klienta."""
+    """Główna funkcja klienta z obsługą szyfrowania TLS."""
     global moj_symbol, gra_aktywna, plansza
 
-    print(f"[KLIENT] Łączę się z {host}:{port}...")
+    print(f"[KLIENT] Próba bezpiecznego połączenia TLS z {host}:{port}...")
+
+    # 1. Konfiguracja kontekstu SSL dla klienta
+    # ssl._create_unverified_context() pozwala na używanie certyfikatów samo-podpisanych (self-signed)
+    context = ssl._create_unverified_context()
 
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(TIMEOUT)
+        # Tworzymy zwykłe gniazdo TCP
+        raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        raw_sock.settimeout(TIMEOUT)
+        
+        # 2. OPAKOWUJEMY GNIAZDO W WARSTWĘ TLS
+        sock = context.wrap_socket(raw_sock, server_hostname=host)
+        
+        # Nawiązujemy połączenie (pod spodem wykona się Handshake TLS)
         sock.connect((host, port))
-        print("[KLIENT] Połączono!")
-    except (ConnectionRefusedError, OSError) as e:
-        print(f"[KLIENT] Nie można połączyć: {e}")
+        print("[KLIENT] Połączono bezpiecznie (TLS 1.3/1.2)!")
+        
+    except (ConnectionRefusedError, OSError, ssl.SSLError) as e:
+        print(f"[KLIENT] Nie można nawiązać bezpiecznego połączenia: {e}")
         return
 
     try:
