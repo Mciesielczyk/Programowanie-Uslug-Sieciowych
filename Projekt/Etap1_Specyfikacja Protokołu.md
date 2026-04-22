@@ -286,6 +286,9 @@ Następujące sytuacje skutkują odpowiedzią `ERROR` lub zamknięciem połącze
 ---
 
 ## 4. Model stanów i przebieg komunikacji
+![](images/przeplyw.png)
+
+Diagram przepływu
 
 ### 4.1 Stany po stronie klienta
 
@@ -502,10 +505,13 @@ Poniżej pełna sekwencja dla jednego klienta (Klient A — symbol X, wygrywa):
 ← BYE
   payload: { "msg": "Dziękujemy za grę!" }
 ```
+![](images/image.png)
+![](images/2.png)
+
 
 ---
 
-### Scenariusz 2: Błędne logowanie + timeout
+### Scenariusz 2: Błędne logowanie 
 
 ```
 → HELLO
@@ -537,6 +543,7 @@ Poniżej pełna sekwencja dla jednego klienta (Klient A — symbol X, wygrywa):
 
   [połączenie zamknięte]
 ```
+![](images/3.png)
 
 ---
 
@@ -583,7 +590,10 @@ Poniżej pełna sekwencja dla jednego klienta (Klient A — symbol X, wygrywa):
 ← BYE
   payload: { "msg": "Dziękujemy za grę!" }
 ```
+![](images/4.png)
 
+
+![](images/5.png)
 ---
 
 ### Scenariusz 4: Próba sfałszowania wiadomości (wykrycie błędnego HMAC)
