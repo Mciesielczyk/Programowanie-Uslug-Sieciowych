@@ -1,7 +1,7 @@
 # Klucze i certyfikaty
 *.key
 *.pem
-
+*.crt
 # Środowisko Python
 __pycache__/
 *.py[cod]
