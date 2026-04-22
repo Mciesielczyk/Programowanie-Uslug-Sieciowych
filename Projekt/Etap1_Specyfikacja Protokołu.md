@@ -505,8 +505,6 @@ Poniżej pełna sekwencja dla jednego klienta (Klient A — symbol X, wygrywa):
 ← BYE
   payload: { "msg": "Dziękujemy za grę!" }
 ```
-![](images/image.png)
-![](images/2.png)
 
 
 ---
@@ -543,7 +541,7 @@ Poniżej pełna sekwencja dla jednego klienta (Klient A — symbol X, wygrywa):
 
   [połączenie zamknięte]
 ```
-![](images/3.png)
+
 
 ---
 
@@ -590,10 +588,7 @@ Poniżej pełna sekwencja dla jednego klienta (Klient A — symbol X, wygrywa):
 ← BYE
   payload: { "msg": "Dziękujemy za grę!" }
 ```
-![](images/4.png)
 
-
-![](images/5.png)
 ---
 
 ### Scenariusz 4: Próba sfałszowania wiadomości (wykrycie błędnego HMAC)
@@ -613,4 +608,4 @@ Poniżej pełna sekwencja dla jednego klienta (Klient A — symbol X, wygrywa):
 
 ---
 
-*Koniec specyfikacji protokołu TKTP*
+*Koniec dokumentacji Etapu 1*
