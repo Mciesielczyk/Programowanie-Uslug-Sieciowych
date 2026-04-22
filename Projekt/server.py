@@ -38,6 +38,21 @@ UZYTKOWNICY = {
     "gracz2": hashlib.sha256(b"haslo2").hexdigest(),
     "gracz3": hashlib.sha256(b"haslo3").hexdigest(),
     "admin":  hashlib.sha256(b"admin123").hexdigest(),
+
+    "a1": hashlib.sha256(b"a").hexdigest(),
+    "b1": hashlib.sha256(b"b").hexdigest(),
+    "x1": hashlib.sha256(b"x").hexdigest(),
+    "y1": hashlib.sha256(b"y").hexdigest(),
+
+    "a2": hashlib.sha256(b"a").hexdigest(),
+    "b2": hashlib.sha256(b"b").hexdigest(),
+    "x2": hashlib.sha256(b"x").hexdigest(),
+    "y2": hashlib.sha256(b"y").hexdigest(),
+
+    "a3": hashlib.sha256(b"a").hexdigest(),
+    "b3": hashlib.sha256(b"b").hexdigest(),
+    "x3": hashlib.sha256(b"x").hexdigest(),
+    "y3": hashlib.sha256(b"y").hexdigest(),
 }
 
 # Poczekalnia — tu trafiają zalogowani gracze czekający na rywala
