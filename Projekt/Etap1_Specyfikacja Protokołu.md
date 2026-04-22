@@ -1,7 +1,7 @@
 # Specyfikacja Protokołu TKTP
 ## TicTacToe Protocol — wersja 1.0
 
-**Przedmiot:** Sieci Komputerowe — Projekt grupowy
+**Przedmiot:** Programowanie Uslug Sieciowych — Projekt grupowy
 
 **Język implementacji:** Python
 
