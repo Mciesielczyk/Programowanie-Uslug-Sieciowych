@@ -16,6 +16,7 @@ import threading
 import argparse
 import sys
 import time
+import ssl
 from protocol import (
     wyslij, odbierz, TIMEOUT,
     MSG_HELLO, MSG_AUTH, MSG_AUTH_OK, MSG_AUTH_ERR,
@@ -85,9 +86,14 @@ def polacz_i_graj(host: str, port: int):
     print(f"[KLIENT] Łączę się z {host}:{port}...")
 
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.check_hostname = False      # bo mamy self-signed cert
+        context.verify_mode = ssl.CERT_NONE # j.w.
+        raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        raw_sock.connect((host, port))
+        sock = context.wrap_socket(raw_sock)
         sock.settimeout(TIMEOUT)
-        sock.connect((host, port))
+        
         print("[KLIENT] Połączono!")
     except (ConnectionRefusedError, OSError) as e:
         print(f"[KLIENT] Nie można połączyć: {e}")
@@ -153,7 +159,6 @@ def polacz_i_graj(host: str, port: int):
                 return
 
         # Krok 4: Główna pętla gry
-# Krok 4: Główna pętla gry
         gra_aktywna = True
 
         # Uruchom wątek ping w tle
@@ -200,9 +205,18 @@ def polacz_i_graj(host: str, port: int):
 
             elif wiad["type"] == MSG_ERROR:
                 # Jeśli serwer odrzuci ruch, wypisujemy błąd.
-                # Ponieważ tura na serwerze się nie zmieniła, 
-                # serwer zaraz wyśle ponownie MSG_YOUR_TURN, co wywoła zapytaj_o_ruch()
                 print(f"[BŁĄD SERWERA] {wiad['payload'].get('msg')}")
+                
+                # KLUCZOWA ZMIANA: Skoro był błąd, to wciąż jest MOJA kolej.
+                # Musimy od razu zapytać o nowy ruch, zamiast czekać na nową wiadomość.
+                print("Spróbuj ponownie!")
+                row, col = zapytaj_o_ruch()
+                if row == -1:
+                    wyslij(sock, MSG_BYE, {"reason": "Gracz opuścił grę"})
+                    gra_aktywna = False
+                else:
+                    wyslij(sock, MSG_MOVE, {"row": row, "col": col})
+                # Teraz pętla wróci do odbierz(sock) i będzie czekać na wynik poprawnego ruchu
 
             elif wiad["type"] == MSG_BYE:
                 print(f"\n[SERWER] {wiad['payload'].get('msg', 'Rozłączono')}")

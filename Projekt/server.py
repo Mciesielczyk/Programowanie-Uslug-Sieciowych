@@ -18,6 +18,7 @@ import threading
 import hashlib
 import time
 import sys
+import ssl
 from protocol import (
     wyslij, odbierz, TIMEOUT,
     MSG_HELLO, MSG_AUTH, MSG_AUTH_OK, MSG_AUTH_ERR,
@@ -222,10 +223,12 @@ class GraKolkoKrzyzyk:
                             # Walidacja danych
                             if not (isinstance(row, int) and isinstance(col, int) and 0 <= row <= 2 and 0 <= col <= 2):
                                 wyslij(s, MSG_ERROR, {"msg": "Błędne współrzędne"})
+                                
                                 continue
 
                             if self.plansza[row][col] != ".":
                                 wyslij(s, MSG_ERROR, {"msg": "To pole jest zajęte"})
+                
                                 continue
 
                             # Wykonaj ruch
@@ -324,13 +327,18 @@ def uruchom_serwer():
     # Pozwól od razu zajać port po restarcie (bez czekania na TIME_WAIT)
     serwer_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     serwer_sock.bind((HOST, PORT))
+
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain("server.crt", "server.key")
+
     serwer_sock.listen(10)
     print(f"[SERWER] Działa na {HOST}:{PORT}")
     print(f"[SERWER] Użytkownicy: {list(UZYTKOWNICY.keys())}")
 
     try:
         while True:
-            sock, addr = serwer_sock.accept()
+            raw_sock, addr = serwer_sock.accept()
+            sock = context.wrap_socket(raw_sock, server_side=True)
             # Każdy klient dostaje swój wątek
             watek = threading.Thread(
                 target=obsluz_klienta,

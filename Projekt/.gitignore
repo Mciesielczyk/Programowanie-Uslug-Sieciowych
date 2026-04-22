@@ -1,0 +1,8 @@
+# Klucze i certyfikaty
+*.key
+*.pem
+
+# Środowisko Python
+__pycache__/
+*.py[cod]
+.env
