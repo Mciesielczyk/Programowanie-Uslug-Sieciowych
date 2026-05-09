@@ -79,7 +79,7 @@ python client.py
 **TLS (Warstwa Transportowa):**
 Zastosowano ssl.create_default_context na serwerze z załadowaniem certyfikatów. Klient używa ssl.CERT_NONE (dedykowane dla certyfikatów samopodpisanych w celach projektowych), co zapewnia pełną poufność przesyłanych danych. Poniższy zrzut ekranu z analizatora Wireshark potwierdza poprawne zestawienie bezpiecznego kanału komunikacji.
 
-![wireshark.png](image_92ff1b.png)
+![](images/wireshark.png)
 
 **Analiza zrzutu ekranu (Wireshark):**
 *   **TCP Handshake (pakiety 84-86):** Widoczne klasyczne nawiązanie połączenia (SYN, SYN-ACK, ACK), co potwierdza poprawną inicjację sesji przed negocjacją szyfrowania.
