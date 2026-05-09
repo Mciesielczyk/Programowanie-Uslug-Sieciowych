@@ -135,6 +135,8 @@ def odbierz(sock: socket.socket) -> dict:
 
         # Sprawdź HMAC
         if not weryfikuj(wiadomosc):
+            print(f"[ALARM] Błędny HMAC od gniazda!")
+            sock.close()
             raise ValueError("Błędny HMAC — wiadomość mogła zostać zmodyfikowana!")
 
         return wiadomosc

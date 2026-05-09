@@ -63,6 +63,7 @@ def hash_hasla(haslo: str) -> str:
 
 def zaloguj_klienta(sock: socket.socket, addr) -> str | None:
     """Handshake i autoryzacja z użyciem MsgType."""
+    ip, port = addr
     print(f"[SERWER] Nowe połączenie od {addr}")
 
     try:
@@ -92,12 +93,31 @@ def zaloguj_klienta(sock: socket.socket, addr) -> str | None:
                 return login
             else:
                 pozostalo = 2 - proba
+                # Wysyłamy informację o błędzie (klient wyświetli "Pozostało prób: X")
                 wyslij(sock, MsgType.AUTH_ERR, {
                     "msg": "Błędny login lub hasło",
                     "attempts_left": pozostalo
                 })
                 print(f"[SERWER] Nieudane logowanie ({proba+1}/3) dla: {login}")
 
+                # JEŚLI TO BYŁA OSTATNIA PRÓBA (pozostalo == 0)
+                if pozostalo == 0:
+                    print(f"[BAN] {ip}:{port} - przekroczono limit prób dla loginu: {login}")
+                    # Wysyłamy BYE, żeby klient wszedł w swój blok "Zbyt wiele nieudanych prób"
+                    wyslij(sock, MsgType.BYE, {"reason": "Przekroczono limit prób."})
+                    
+                    # Twarde zamknięcie, żeby pytest dostał ConnectionError
+                    try:
+                        sock.shutdown(socket.SHUT_RDWR)
+                        sock.close()
+                    except:
+                        pass
+                    return None
+
+        return None
+
+    except (ConnectionError, TimeoutError, ValueError) as e:
+        print(f"[SERWER] Błąd podczas logowania {addr}: {e}")
         return None
 
     except (ConnectionError, TimeoutError, ValueError) as e:
