@@ -76,14 +76,21 @@ python client.py
 
 ### 3.1 Bezpieczeństwo w praktyce
 
-**TLS:**
-Zastosowano `ssl.create_default_context` na serwerze z załadowaniem certyfikatów. Klient używa `ssl.CERT_NONE` (dla certyfikatów samopodpisanych), zapewniając pełną poufność danych.
+**TLS (Warstwa Transportowa):**
+Zastosowano ssl.create_default_context na serwerze z załadowaniem certyfikatów. Klient używa ssl.CERT_NONE (dedykowane dla certyfikatów samopodpisanych w celach projektowych), co zapewnia pełną poufność przesyłanych danych. Poniższy zrzut ekranu z analizatora Wireshark potwierdza poprawne zestawienie bezpiecznego kanału komunikacji.
 
-**HMAC:**
-Każdy pakiet JSON jest wzbogacany o pole `hmac`. Serwer odrzuca wiadomości, których podpis nie zgadza się z `SECRET_KEY` zdefiniowanym w `protocol.py`.
+![wireshark.png](image_92ff1b.png)
 
-**Hasła:**
-W `server.py` hasła są porównywane przy użyciu `hashlib.sha256()`. W bazie (słowniku) nie istnieją hasła w formie tekstowej.
+**Analiza zrzutu ekranu (Wireshark):**
+*   **TCP Handshake (pakiety 84-86):** Widoczne klasyczne nawiązanie połączenia (SYN, SYN-ACK, ACK), co potwierdza poprawną inicjację sesji przed negocjacją szyfrowania.
+*   **TLS Handshake (pakiety 87-89):** Widoczna negocjacja nowoczesnego protokołu TLS 1.3. Pakiet nr 89 (Server Hello) zawiera również instrukcję Change Cipher Spec, po której następuje przejście na komunikację szyfrowaną.
+*   **Poufność danych (Application Data):** Wszystkie kolejne pakiety (np. 93-99) są oznaczone jako Application Data. Oznacza to, że ich treść (struktury JSON) jest całkowicie zaszyfrowana i nieczytelna dla postronnego obserwatora.
+
+**HMAC (Integralność):**
+Każdy pakiet JSON jest wzbogacany o pole hmac. Serwer automatycznie odrzuca wiadomości, których podpis nie zgadza się z kluczem SECRET_KEY zdefiniowanym w modułach protokołu. Mechanizm ten zapewnia integralność danych, uniemożliwiając modyfikację treści komunikatów (np. zmianę pola ruchu na planszy) przez osoby trzecie.
+
+**Hasła (Uwierzytelnianie):**
+W systemie hasła są weryfikowane przy użyciu funkcji skrótu hashlib.sha256(). W bazie danych serwera (słowniku użytkowników) nie są przechowywane hasła w formie jawnego tekstu, co stanowi kluczowe zabezpieczenie danych użytkowników w przypadku potencjalnego wycieku bazy.
 
 ---
 
