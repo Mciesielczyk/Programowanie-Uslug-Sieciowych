@@ -26,6 +26,7 @@ import struct
 import socket
 import uuid
 import time
+from enum import Enum
 
 # Sekretny klucz wspólny dla klienta i serwera (w prawdziwej apce wysyłany przez TLS)
 # W naszej implementacji jest zakodowany na stałe — w dokumentacji zaznaczymy że
@@ -36,21 +37,22 @@ SECRET_KEY = b"super_tajny_klucz_projektu_2025"
 TIMEOUT = 30
 
 # Typy wiadomości w protokole
-MSG_HELLO   = "HELLO"    # powitanie klienta
-MSG_AUTH    = "AUTH"     # logowanie (login + hasło)
-MSG_AUTH_OK = "AUTH_OK"  # serwer potwierdza logowanie
-MSG_AUTH_ERR= "AUTH_ERR" # serwer odrzuca logowanie
-MSG_WAIT    = "WAIT"     # czekaj na drugiego gracza
-MSG_START   = "START"    # gra się zaczyna, masz symbol X lub O
-MSG_MOVE    = "MOVE"     # ruch gracza (row, col)
-MSG_BOARD   = "BOARD"    # serwer wysyła stan planszy po ruchu
-MSG_YOUR_TURN = "YOUR_TURN"  # twoja kolej
-MSG_WIN     = "WIN"      # ktoś wygrał
-MSG_DRAW    = "DRAW"     # remis
-MSG_ERROR   = "ERROR"    # błąd protokołu / nieprawidłowy ruch
-MSG_BYE     = "BYE"      # rozłączenie
-MSG_PING    = "PING"     # sprawdzenie czy połączenie żyje
-MSG_PONG    = "PONG"     # odpowiedź na ping
+class MsgType(str, Enum):
+    HELLO      = "HELLO"      # powitanie
+    AUTH       = "AUTH"       # logowanie
+    AUTH_OK    = "AUTH_OK"    # sukces logowania
+    AUTH_ERR   = "AUTH_ERR"   # błąd logowania
+    WAIT       = "WAIT"       # poczekalnia
+    START      = "START"      # start gry
+    MOVE       = "MOVE"       # ruch
+    BOARD      = "BOARD"      # stan planszy
+    YOUR_TURN  = "YOUR_TURN"  # tura gracza
+    WIN        = "WIN"        # wygrana
+    DRAW       = "DRAW"       # remis
+    ERROR      = "ERROR"      # błąd
+    BYE        = "BYE"        # rozłączenie
+    PING       = "PING"       # keep-alive
+    PONG       = "PONG"       # odpowiedź ping
 
 
 def podpisz(payload_dict: dict, msg_id: str) -> str:
@@ -76,32 +78,28 @@ def weryfikuj(wiadomosc: dict) -> bool:
     return hmac.compare_digest(otrzymany_hmac, oczekiwany_hmac)
 
 
-def zbuduj_wiadomosc(typ: str, payload: dict = None) -> dict:
+def zbuduj_wiadomosc(typ: MsgType, payload: dict = None) -> dict:
     """
-    Tworzy słownik wiadomości gotowy do wysłania.
-    Automatycznie dodaje unikalny msg_id i HMAC.
+    Tworzy słownik wiadomości. 'typ' to teraz element klasy MsgType.
     """
     if payload is None:
         payload = {}
-    msg_id = str(uuid.uuid4())  # unikalny ID — chroni przed replay attack
+    msg_id = str(uuid.uuid4())
     return {
-        "type": typ,
+        "type": typ.value,  # .value wyciąga czysty string "HELLO", "AUTH" itp.
         "msg_id": msg_id,
-        "timestamp": time.time(),  # znacznik czasu
+        "timestamp": time.time(),
         "payload": payload,
         "hmac": podpisz(payload, msg_id)
     }
 
 
-def wyslij(sock: socket.socket, typ: str, payload: dict = None):
+def wyslij(sock: socket.socket, typ: MsgType, payload: dict = None):
     """
-    Buduje wiadomość i wysyła ją przez socket.
-    Najpierw wysyła 4 bajty z długością, potem JSON.
-    Rzuca ConnectionError jeśli socket padł.
+    Używamy MsgType zamiast zwykłego stringa.
     """
     wiadomosc = zbuduj_wiadomosc(typ, payload)
     dane = json.dumps(wiadomosc).encode("utf-8")
-    # struct.pack ">I" = 4 bajty big-endian unsigned int (długość)
     naglowek = struct.pack(">I", len(dane))
     try:
         sock.sendall(naglowek + dane)

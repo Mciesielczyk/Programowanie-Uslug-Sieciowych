@@ -18,11 +18,7 @@ import sys
 import time
 import ssl
 from protocol import (
-    wyslij, odbierz, TIMEOUT,
-    MSG_HELLO, MSG_AUTH, MSG_AUTH_OK, MSG_AUTH_ERR,
-    MSG_WAIT, MSG_START, MSG_MOVE, MSG_BOARD,
-    MSG_YOUR_TURN, MSG_WIN, MSG_DRAW, MSG_ERROR,
-    MSG_BYE, MSG_PING, MSG_PONG
+    wyslij, odbierz, TIMEOUT, MsgType
 )
 
 # Globalny stan klienta
@@ -74,7 +70,7 @@ def watek_ping(sock: socket.socket):
         if not gra_aktywna:
             break
         try:
-            wyslij(sock, MSG_PING, {})
+            wyslij(sock, MsgType.PING, {})
         except ConnectionError:
             break
 
@@ -102,11 +98,11 @@ def polacz_i_graj(host: str, port: int):
     try:
         # Krok 1: Podaj login i wyślij HELLO
         login = input("Login: ").strip()
-        wyslij(sock, MSG_HELLO, {"login": login})
+        wyslij(sock, MsgType.HELLO, {"login": login})
 
         # Odbierz HELLO od serwera
         wiad = odbierz(sock)
-        if wiad["type"] != MSG_HELLO:
+        if wiad["type"] != MsgType.HELLO:
             print(f"[KLIENT] Nieoczekiwana odpowiedź: {wiad['type']}")
             return
         print(f"[SERWER] {wiad['payload'].get('msg')}")
@@ -114,13 +110,13 @@ def polacz_i_graj(host: str, port: int):
         # Krok 2: Logowanie (max 3 próby)
         for proba in range(3):
             haslo = input("Hasło: ").strip()
-            wyslij(sock, MSG_AUTH, {"login": login, "password": haslo})
+            wyslij(sock, MsgType.AUTH, {"login": login, "password": haslo})
 
             wiad = odbierz(sock)
-            if wiad["type"] == MSG_AUTH_OK:
+            if wiad["type"] == MsgType.AUTH_OK:
                 print(f"[SERWER] {wiad['payload'].get('msg')}")
                 break
-            elif wiad["type"] == MSG_AUTH_ERR:
+            elif wiad["type"] == MsgType.AUTH_ERR:
                 pozostalo = wiad["payload"].get("attempts_left", 0)
                 print(f"[SERWER] Błąd logowania. Pozostało prób: {pozostalo}")
                 if pozostalo == 0:
@@ -135,11 +131,11 @@ def polacz_i_graj(host: str, port: int):
         while True:
             wiad = odbierz(sock)
 
-            if wiad["type"] == MSG_WAIT:
+            if wiad["type"] == MsgType.WAIT:
                 print(f"[SERWER] {wiad['payload'].get('msg')}")
                 continue
 
-            if wiad["type"] == MSG_START:
+            if wiad["type"] == MsgType.START:
                 moj_symbol = wiad["payload"]["symbol"]
                 rywal = wiad["payload"]["rywal"]
                 zaczynasz = wiad["payload"]["zaczynasz"]
@@ -150,11 +146,11 @@ def polacz_i_graj(host: str, port: int):
                     print(f"[SERWER] {rywal} zaczyna.")
                 break
 
-            if wiad["type"] == MSG_BYE:
+            if wiad["type"] == MsgType.BYE:
                 print(f"[SERWER] {wiad['payload'].get('reason', 'Rozłączono')}")
                 return
 
-            if wiad["type"] == MSG_ERROR:
+            if wiad["type"] == MsgType.ERROR:
                 print(f"[BŁĄD] {wiad['payload'].get('msg')}")
                 return
 
@@ -170,10 +166,11 @@ def polacz_i_graj(host: str, port: int):
         while gra_aktywna:
             wiad = odbierz(sock)
 
-            if wiad["type"] == MSG_PONG:
+
+            if wiad["type"] == MsgType.PONG:
                 continue
 
-            elif wiad["type"] == MSG_BOARD:
+            elif wiad["type"] == MsgType.BOARD:
                 # Serwer wysłał nowy stan planszy
                 plansza = wiad["payload"]["board"]
                 ostatni_ruch = wiad["payload"].get("last_move", {})
@@ -181,29 +178,29 @@ def polacz_i_graj(host: str, port: int):
                     print(f"\n[PLANSZA] {ostatni_ruch.get('symbol','?')} zagrał na ({ostatni_ruch.get('row')},{ostatni_ruch.get('col')})")
                 narysuj_plansze(plansza)
 
-            elif wiad["type"] == MSG_YOUR_TURN:
+            elif wiad["type"] == MsgType.YOUR_TURN:
                 # Moja kolej: Pytamy o ruch RAZ i wysyłamy. 
                 # Nie robimy tu wewnętrznego odbierz(sock)!
                 print(">>> Twoja kolej! <<<")
                 row, col = zapytaj_o_ruch()
 
                 if row == -1:
-                    wyslij(sock, MSG_BYE, {"reason": "Gracz opuścił grę"})
+                    wyslij(sock, MsgType.BYE, {"reason": "Gracz opuścił grę"})
                     gra_aktywna = False
                 else:
-                    wyslij(sock, MSG_MOVE, {"row": row, "col": col})
+                    wyslij(sock, MsgType.MOVE, {"row": row, "col": col})
                     # Po wysłaniu ruchu pętla wraca na górę do wiad = odbierz(sock)
-                    # i tam czeka na MSG_BOARD (sukces) lub MSG_ERROR (zły ruch)
+                    # i tam czeka na MsgType.BOARD (sukces) lub MsgType.ERROR (zły ruch)
 
-            elif wiad["type"] == MSG_WIN:
+            elif wiad["type"] == MsgType.WIN:
                 _obsluz_koniec_gry(wiad)
                 gra_aktywna = False
 
-            elif wiad["type"] == MSG_DRAW:
+            elif wiad["type"] == MsgType.DRAW:
                 print("\n=== REMIS! ===")
                 gra_aktywna = False
 
-            elif wiad["type"] == MSG_ERROR:
+            elif wiad["type"] == MsgType.ERROR:
                 # Jeśli serwer odrzuci ruch, wypisujemy błąd.
                 print(f"[BŁĄD SERWERA] {wiad['payload'].get('msg')}")
                 
@@ -212,29 +209,17 @@ def polacz_i_graj(host: str, port: int):
                 print("Spróbuj ponownie!")
                 row, col = zapytaj_o_ruch()
                 if row == -1:
-                    wyslij(sock, MSG_BYE, {"reason": "Gracz opuścił grę"})
+                    wyslij(sock, MsgType.BYE, {"reason": "Gracz opuścił grę"})
                     gra_aktywna = False
                 else:
-                    wyslij(sock, MSG_MOVE, {"row": row, "col": col})
+                    wyslij(sock, MsgType.MOVE, {"row": row, "col": col})
                 # Teraz pętla wróci do odbierz(sock) i będzie czekać na wynik poprawnego ruchu
 
-            elif wiad["type"] == MSG_BYE:
+            elif wiad["type"] == MsgType.BYE:
                 print(f"\n[SERWER] {wiad['payload'].get('msg', 'Rozłączono')}")
                 gra_aktywna = False
 
-            elif wiad["type"] == MSG_WIN:
-                _obsluz_koniec_gry(wiad)
-                gra_aktywna = False
-
-            elif wiad["type"] == MSG_DRAW:
-                print("\n=== REMIS! ===")
-                gra_aktywna = False
-
-            elif wiad["type"] == MSG_BYE:
-                print(f"\n[SERWER] {wiad['payload'].get('msg', 'Rozłączono')}")
-                gra_aktywna = False
-
-            elif wiad["type"] == MSG_ERROR:
+            elif wiad["type"] == MsgType.ERROR:
                 print(f"[BŁĄD SERWERA] {wiad['payload'].get('msg')}")
 
     except TimeoutError:
@@ -246,7 +231,7 @@ def polacz_i_graj(host: str, port: int):
     except KeyboardInterrupt:
         print("\n[KLIENT] Przerywam...")
         try:
-            wyslij(sock, MSG_BYE, {"reason": "Klient przerwał"})
+            wyslij(sock, MsgType.BYE, {"reason": "Klient przerwał"})
         except Exception:
             pass
     finally:
