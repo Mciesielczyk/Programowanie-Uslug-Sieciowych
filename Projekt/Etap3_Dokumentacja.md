@@ -1,4 +1,4 @@
-
+<img width="877" height="83" alt="image" src="https://github.com/user-attachments/assets/befa380c-977d-4c90-b75f-52e8cbd2b585" />
 
 # Dokumentacja Techniczna Projektu: Aplikacja Kółko i Krzyżyk
 ## Etap 3 — Implementacja i Dokumentacja Uruchomienia
@@ -121,6 +121,20 @@ Serwer poprawnie kończy sesję i wysyła `MSG_BYE`.
 ![](images/image.png)
 ![](images/2.png)
 
+**Pełna plansza bez wygranej:**
+
+**Wynik:**
+Ostatnie wolne pole zostaje zajęte, ale nikt nie ułożył linii. Serwer wysyła `MSG_DRAW`.
+
+![](images/remis.png)
+
+**Gracz wpisuje q:**
+
+**Wynik:**
+Gracz wpisujący q poddaje grę, serwer dostaje `MSG_BYE`, a oponent `MSG_WIN`.
+
+![](images/q.png)
+
 
 ---
 
@@ -131,6 +145,7 @@ Klient otrzymuje `MSG_ERROR` i jest proszony o ponowne podanie współrzędnych.
 
 ![](images/4.png)
 
+
 **Nagłe zamknięcie klienta (Ctrl+C):**
 Serwer wychwytuje `ConnectionResetError`, usuwa gracza z listy i przyznaje wygraną przeciwnikowi.
 
@@ -140,12 +155,46 @@ Serwer wychwytuje `ConnectionResetError`, usuwa gracza z listy i przyznaje wygra
 **Błędne hasło:**
 Serwer inkrementuje licznik prób i po 3 nieudanych próbach blokuje połączenie.
 
-
 ![](images/3.png)
+
+
+**Ruch na pole poza zakresem:**
+
+Klient nie pozwala wykonać ruchu poza zakresem lub przy nie podaniu liczb i nakazuje ponownie wykonać ruch.
+
+![](images/bledne_pole1.png)
+![](images/bledne_pole2.png)
 
 ---
 
-### 4.3 Krótki test obciążeniowy
+### 4.3 Testy bezpieczeństwa
+
+**Wiadomość z błędnym HMAC:**
+Zmodyfikowano na chwilę plik `protocol.py`, zmieniając `SECRET_KEY` tylko u jednego klienta. Klient wysłał poprawny format JSON, ale z nieprawidłowym podpisem.
+
+
+**Wynik:** Serwer po odebraniu pakietu i weryfikacji HMAC wykrył niezgodność skrótu i rozłączył klienta, logując próbę manipulacji danymi.
+
+![](images/zly_HMAC.png)
+
+
+**Klient łączy się bez TLS:**
+Próba nawiązania połączenia za pomocą komendy `curl http://127.0.0.1:5555` (bez obsługi SSL/TLS).
+
+**Wynik:** Serwer odrzuca połączenie na poziomie Handshakeu. Protokół aplikacyjny w ogóle nie startuje, co potwierdza wymóg bezpiecznego kanału.
+
+![](images/bez_TLS.png)
+
+
+**Ten sam login dwukrotnie w poczekalni:**
+Uruchomiono dwie instancje klienta i zalogowano się na to samo konto. Pierwszy klient wszedł do lobby, drugi spróbował zrobić to samo.
+
+**Wynik:** Serwer wysyła `MSG_ERROR` z kodem 409 do drugiego klienta i zamyka jego połączenie, zapobiegając konfliktom sesji.
+
+![](images/ten_sam_login.png)
+
+
+**Test obciążeniowy:**
 
 Przeprowadzono symulację uruchomienia 5 równoległych instancji gry (10 klientów).
 
