@@ -148,7 +148,11 @@ Serwer inkrementuje licznik prób i po 3 nieudanych próbach blokuje połączeni
 ### 4.3 Krótki test obciążeniowy
 
 Przeprowadzono symulację uruchomienia 5 równoległych instancji gry (10 klientów).
+
+**Wynik:**
 Serwer wykorzystujący `threading.Thread` zachował stabilność.
+
+![](images/Test_obciazeniowy)
 
 ---
 
