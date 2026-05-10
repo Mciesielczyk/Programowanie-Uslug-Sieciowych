@@ -1,6 +1,4 @@
 """
-protocol.py — wspólny moduł protokołu dla kółko i krzyżyk
-=========================================================
 Odpowiada za:
   - format wiadomości (JSON)
   - podpisywanie wiadomości (HMAC-SHA256) — żeby nikt nie sfałszował pakietu
@@ -28,9 +26,7 @@ import uuid
 import time
 from enum import Enum
 
-# Sekretny klucz wspólny dla klienta i serwera (w prawdziwej apce wysyłany przez TLS)
-# W naszej implementacji jest zakodowany na stałe — w dokumentacji zaznaczymy że
-# w produkcji byłby wymieniany podczas handshake po TLS
+# Sekretny klucz wspólny dla klienta i serwera
 SECRET_KEY = b"super_tajny_klucz_projektu_2025"
 
 # Timeout w sekundach — ile czekamy na dane zanim uznamy że połączenie padło
@@ -55,21 +51,13 @@ class MsgType(str, Enum):
     PONG       = "PONG"       # odpowiedź ping
 
 
+# szyfrowanie HMAC
 def podpisz(payload_dict: dict, msg_id: str) -> str:
-    """
-    Oblicza HMAC-SHA256 dla wiadomości.
-    Podpisujemy: msg_id + posortowany JSON payload
-    Dzięki temu nikt nie może zmodyfikować wiadomości bez znajomości klucza.
-    """
     dane = msg_id + json.dumps(payload_dict, sort_keys=True)
     return hmac.new(SECRET_KEY, dane.encode(), hashlib.sha256).hexdigest()
 
-
+# SPRAWDZANIE HMAC
 def weryfikuj(wiadomosc: dict) -> bool:
-    """
-    Sprawdza czy HMAC w wiadomości się zgadza.
-    Zwraca True jeśli wiadomość jest autentyczna, False jeśli ktoś ją zmienił.
-    """
     otrzymany_hmac = wiadomosc.get("hmac", "")
     payload = wiadomosc.get("payload", {})
     msg_id = wiadomosc.get("msg_id", "")
@@ -79,14 +67,11 @@ def weryfikuj(wiadomosc: dict) -> bool:
 
 
 def zbuduj_wiadomosc(typ: MsgType, payload: dict = None) -> dict:
-    """
-    Tworzy słownik wiadomości. 'typ' to teraz element klasy MsgType.
-    """
     if payload is None:
         payload = {}
     msg_id = str(uuid.uuid4())
     return {
-        "type": typ.value,  # .value wyciąga czysty string "HELLO", "AUTH" itp.
+        "type": typ.value,  # .value wyciąga czysty string np. "HELLO"
         "msg_id": msg_id,
         "timestamp": time.time(),
         "payload": payload,
@@ -95,9 +80,6 @@ def zbuduj_wiadomosc(typ: MsgType, payload: dict = None) -> dict:
 
 
 def wyslij(sock: socket.socket, typ: MsgType, payload: dict = None):
-    """
-    Używamy MsgType zamiast zwykłego stringa.
-    """
     wiadomosc = zbuduj_wiadomosc(typ, payload)
     dane = json.dumps(wiadomosc).encode("utf-8")
     naglowek = struct.pack(">I", len(dane))
@@ -107,22 +89,20 @@ def wyslij(sock: socket.socket, typ: MsgType, payload: dict = None):
         raise ConnectionError(f"Błąd wysyłania: {e}")
 
 
+#Odbiera jedną wiadomość z socketa
+#Czyta 4 bajty nagłówka, potem dokładnie tyle bajtów ile powiedziano
+#Weryfikuje HMAC — jeśli nie pasuje, rzuca ValueError
+#Rzuca ConnectionError jeśli połączenie padło
+#Rzuca TimeoutError jeśli timeout
 def odbierz(sock: socket.socket) -> dict:
-    """
-    Odbiera jedną wiadomość z socketa.
-    Czyta 4 bajty nagłówka, potem dokładnie tyle bajtów ile powiedziano.
-    Weryfikuje HMAC — jeśli nie pasuje, rzuca ValueError.
-    Rzuca ConnectionError jeśli połączenie padło.
-    Rzuca TimeoutError jeśli timeout.
-    """
     try:
-        # Odbierz nagłówek (4 bajty = długość wiadomości)
+        # Odbierz nagłówek 4 bajty
         naglowek = _odbierz_dokladnie(sock, 4)
         if not naglowek:
             raise ConnectionError("Połączenie zamknięte przez drugą stronę")
         dlugosc = struct.unpack(">I", naglowek)[0]
 
-        # Zabezpieczenie: nie przyjmujemy wiadomości > 1MB
+        # nie przyjmujem wiadomości > 1MB
         if dlugosc > 1_000_000:
             raise ValueError(f"Wiadomość za duża: {dlugosc} bajtów")
 
@@ -147,11 +127,9 @@ def odbierz(sock: socket.socket) -> dict:
         raise ValueError(f"Błędny format JSON: {e}")
 
 
+# Funkcja pomocnicza do odbierania dokładnie ile bajtów z socketa
 def _odbierz_dokladnie(sock: socket.socket, ile: int) -> bytes:
-    """
-    Pomocnicza funkcja: odbiera dokładnie `ile` bajtów.
-    Socket może zwrócić mniej bajtów niż prosimy — ta funkcja pętluje do skutku.
-    """
+    
     bufor = b""
     while len(bufor) < ile:
         fragment = sock.recv(ile - len(bufor))

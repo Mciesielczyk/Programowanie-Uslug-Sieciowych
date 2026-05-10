@@ -1,8 +1,4 @@
 """
-server.py — serwer gry kółko i krzyżyk
-=======================================
-Uruchomienie:  python server.py
-
 Co robi serwer:
   1. Czeka na połączenia od klientów
   2. Każdy klient musi się zalogować (AUTH)
@@ -27,8 +23,7 @@ from protocol import (
 HOST = "0.0.0.0"   # słuchaj na wszystkich interfejsach
 PORT = 5555
 
-# Prosta "baza danych" użytkowników: login -> hash_hasla
-# W prawdziwej apce byłaby prawdziwa baza danych
+# Prosta baza danych użytkowników: login -> hash_hasla
 UZYTKOWNICY = {
     "gracz1": hashlib.sha256(b"haslo1").hexdigest(),
     "gracz2": hashlib.sha256(b"haslo2").hexdigest(),
@@ -60,9 +55,9 @@ poczekalnia = []  # lista (socket, login) czekających graczy
 def hash_hasla(haslo: str) -> str:
     return hashlib.sha256(haslo.encode()).hexdigest()
 
-
+#Handshake i autoryzacja z użyciem MsgType
 def zaloguj_klienta(sock: socket.socket, addr) -> str | None:
-    """Handshake i autoryzacja z użyciem MsgType."""
+
     ip, port = addr
     print(f"[SERWER] Nowe połączenie od {addr}")
 
@@ -93,20 +88,16 @@ def zaloguj_klienta(sock: socket.socket, addr) -> str | None:
                 return login
             else:
                 pozostalo = 2 - proba
-                # Wysyłamy informację o błędzie (klient wyświetli "Pozostało prób: X")
                 wyslij(sock, MsgType.AUTH_ERR, {
                     "msg": "Błędny login lub hasło",
                     "attempts_left": pozostalo
                 })
                 print(f"[SERWER] Nieudane logowanie ({proba+1}/3) dla: {login}")
 
-                # JEŚLI TO BYŁA OSTATNIA PRÓBA (pozostalo == 0)
                 if pozostalo == 0:
                     print(f"[BAN] {ip}:{port} - przekroczono limit prób dla loginu: {login}")
-                    # Wysyłamy BYE, żeby klient wszedł w swój blok "Zbyt wiele nieudanych prób"
                     wyslij(sock, MsgType.BYE, {"reason": "Przekroczono limit prób."})
                     
-                    # Twarde zamknięcie, żeby pytest dostał ConnectionError
                     try:
                         sock.shutdown(socket.SHUT_RDWR)
                         sock.close()
@@ -187,7 +178,7 @@ class GraKolkoKrzyzyk:
                         continue
 
                     if wiad["type"] == MsgType.BYE:
-                        # INFO NA SERWERZE O UCIECZCE
+                        # info na serwerze o wyjsciu gracza
                         print(f"[REZULTAT] Gracz {nadawca['login']} poddał mecz.")
                         try: 
                             wyslij(przeciwnik["sock"], MsgType.WIN, {
@@ -213,7 +204,7 @@ class GraKolkoKrzyzyk:
                             wyslij(s, MsgType.ERROR, {"msg": "Pole zajęte!"})
                             continue
 
-                        # WYKONANIE RUCHU I INFO NA SERWERZE
+                        # WYKONANIE RUCHU
                         self.plansza[row][col] = nadawca["symbol"]
                         print(f"[RUCH] {nadawca['login']} ({nadawca['symbol']}) stawia na: [{row}, {col}]")
 
@@ -222,7 +213,7 @@ class GraKolkoKrzyzyk:
                             "last_move": {"row": row, "col": col, "symbol": nadawca["symbol"]}
                         })
 
-                        # SPRAWDZANIE WYNIKU I INFO NA SERWERZE
+                        # SPRAWDZANIE WYNIKU
                         zwyciezca_symbol = self.sprawdz_wygrana()
                         if zwyciezca_symbol:
                             print(f"[KONIEC] Wygrał: {nadawca['login']} ({zwyciezca_symbol})")
@@ -290,7 +281,7 @@ def uruchom_serwer():
         return
 
     serwer_sock.listen(10)
-    serwer_sock.settimeout(1.0) # Pozwala na Ctrl+C
+    serwer_sock.settimeout(1.0)
     print(f"[SERWER] Działa na {HOST}:{PORT} (SSL/TLS ON)")
 
     try:

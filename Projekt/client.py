@@ -1,9 +1,4 @@
 """
-client.py — klient gry kółko i krzyżyk
-========================================
-Uruchomienie:  python client.py
-               python client.py --host 192.168.1.10 --port 5555
-
 Co robi klient:
   1. Łączy się z serwerem
   2. Prosi o login i hasło
@@ -28,8 +23,8 @@ gra_aktywna = False     # czy gra trwa
 plansza = [["." for _ in range(3)] for _ in range(3)]
 
 
+#Rysuje planszę w terminalu
 def narysuj_plansze(p: list):
-    """Rysuje planszę w terminalu w ładny sposób."""
     print("\n  0 1 2")
     print(" -------")
     for i, rzad in enumerate(p):
@@ -37,11 +32,8 @@ def narysuj_plansze(p: list):
     print(" -------\n")
 
 
+#Pyta użytkownika o ruch,zwraca (row, col) lub (-1, -1) jeśli użytkownik chce wyjść
 def zapytaj_o_ruch() -> tuple[int, int]:
-    """
-    Pyta użytkownika o ruch.
-    Zwraca (row, col) lub (-1, -1) jeśli użytkownik chce wyjść.
-    """
     while True:
         try:
             wejscie = input("Twój ruch (wiersz kolumna, np. '1 2', lub 'q' żeby wyjść): ").strip()
@@ -59,12 +51,8 @@ def zapytaj_o_ruch() -> tuple[int, int]:
         except ValueError:
             print("Podaj poprawne liczby całkowite")
 
-
+#Wątek wysyłający PING co 10 sekund
 def watek_ping(sock: socket.socket):
-    """
-    Wątek wysyłający PING co 10 sekund żeby serwer wiedział że żyjemy.
-    Działa w tle przez całą grę.
-    """
     while gra_aktywna:
         time.sleep(10)
         if not gra_aktywna:
@@ -74,9 +62,9 @@ def watek_ping(sock: socket.socket):
         except ConnectionError:
             break
 
+#Główna funkcja klienta
 
 def polacz_i_graj(host: str, port: int):
-    """Główna funkcja klienta."""
     global moj_symbol, moja_kolej, gra_aktywna, plansza
 
     print(f"[KLIENT] Łączę się z {host}:{port}...")
@@ -179,8 +167,6 @@ def polacz_i_graj(host: str, port: int):
                 narysuj_plansze(plansza)
 
             elif wiad["type"] == MsgType.YOUR_TURN:
-                # Moja kolej: Pytamy o ruch RAZ i wysyłamy. 
-                # Nie robimy tu wewnętrznego odbierz(sock)!
                 print(">>> Twoja kolej! <<<")
                 row, col = zapytaj_o_ruch()
 
@@ -189,8 +175,6 @@ def polacz_i_graj(host: str, port: int):
                     gra_aktywna = False
                 else:
                     wyslij(sock, MsgType.MOVE, {"row": row, "col": col})
-                    # Po wysłaniu ruchu pętla wraca na górę do wiad = odbierz(sock)
-                    # i tam czeka na MsgType.BOARD (sukces) lub MsgType.ERROR (zły ruch)
 
             elif wiad["type"] == MsgType.WIN:
                 _obsluz_koniec_gry(wiad)
@@ -201,11 +185,9 @@ def polacz_i_graj(host: str, port: int):
                 gra_aktywna = False
 
             elif wiad["type"] == MsgType.ERROR:
-                # Jeśli serwer odrzuci ruch, wypisujemy błąd.
+                # Jeśli serwer odrzuci ruch, wypisuje błąd
                 print(f"[BŁĄD SERWERA] {wiad['payload'].get('msg')}")
                 
-                # KLUCZOWA ZMIANA: Skoro był błąd, to wciąż jest MOJA kolej.
-                # Musimy od razu zapytać o nowy ruch, zamiast czekać na nową wiadomość.
                 print("Spróbuj ponownie!")
                 row, col = zapytaj_o_ruch()
                 if row == -1:
@@ -240,8 +222,9 @@ def polacz_i_graj(host: str, port: int):
         print("[KLIENT] Rozłączono.")
 
 
+#wyświetl wynik gry
 def _obsluz_koniec_gry(wiad: dict):
-    """Wyświetla wynik gry."""
+    
     global moj_symbol
     winner = wiad["payload"].get("winner", "")
     reason = wiad["payload"].get("reason", "")
