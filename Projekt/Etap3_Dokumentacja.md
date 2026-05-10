@@ -152,7 +152,7 @@ Przeprowadzono symulację uruchomienia 5 równoległych instancji gry (10 klient
 **Wynik:**
 Serwer wykorzystujący `threading.Thread` zachował stabilność.
 
-![](images/Test_obciazeniowy)
+![](images/Test_obciazeniowy.png)
 
 ---
 
