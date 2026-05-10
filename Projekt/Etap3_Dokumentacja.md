@@ -1,5 +1,3 @@
-<img width="877" height="83" alt="image" src="https://github.com/user-attachments/assets/befa380c-977d-4c90-b75f-52e8cbd2b585" />
-
 # Dokumentacja Techniczna Projektu: Aplikacja Kółko i Krzyżyk
 ## Etap 3 — Implementacja i Dokumentacja Uruchomienia
 
